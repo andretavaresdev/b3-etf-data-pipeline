@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Ambiente virtual
+.venv/
+
+# Variáveis de ambiente locais
+.env
+
+# IDE
+.idea/
+
+# Estado local do Claude Code
+.claude/
+
+# Airflow: runtime gerado (logs), não versionar
+airflow/logs/
+
+# Data Lake: dados gerados pelo pipeline (bronze/silver/gold), não versionar
+datalake/
+
+# Artefatos de execução da CLI, regenerados a cada rodada
+cotacoes.csv
+validacao_etfs.json

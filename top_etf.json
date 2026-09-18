@@ -1,0 +1,338 @@
+[
+  {
+    "ticker": "BOVA11",
+    "nome": "ISHARES IBOVESPA FUNDO DE ÍNDICE",
+    "categoria": "etfs",
+    "classe_ativo": "Ações",
+    "gestor": "BlackRock",
+    "indice_referencia": "Ibovespa"
+  },
+  {
+    "ticker": "IVVB11",
+    "nome": "ISHARES S&P 500 FDO INV COTAS FDO INDICE",
+    "categoria": "etfs",
+    "classe_ativo": "Ações",
+    "gestor": "BlackRock",
+    "indice_referencia": "S&P 500"
+  },
+  {
+    "ticker": "HASH11",
+    "nome": "HASHDEX NASDAQ CRYPTO INDEX FUNDO DE ÍNDICE",
+    "categoria": "etfs",
+    "classe_ativo": "Cripto",
+    "gestor": "Hashdex Asset Management",
+    "indice_referencia": "Nasdaq Crypto Index"
+  },
+  {
+    "ticker": "BOVV11",
+    "nome": "IT NOW IBOVESPA FUNDO DE ÍNDICE",
+    "categoria": "etfs",
+    "classe_ativo": "Ações",
+    "gestor": "Itaú Unibanco Asset Management",
+    "indice_referencia": "Ibovespa"
+  },
+  {
+    "ticker": "SPXR11",
+    "nome": "IT NOW S&P 500 FUTURES QUANTO BRL FUNDO DE ÍNDICE - RESPONSABILIDADE LIMITADA",
+    "categoria": "etfs",
+    "classe_ativo": "Ações",
+    "gestor": "Itaú Unibanco Asset Management",
+    "indice_referencia": "S&P 500 Futures Quanto USD-BRL"
+  },
+  {
+    "ticker": "LFTI11",
+    "nome": "IT NOW TEVA TESOURO SELIC FUNDO DE ÍNDICE - RESPONSABILIDADE LIMITADA",
+    "categoria": "etfs",
+    "classe_ativo": "Renda Fixa",
+    "gestor": "Itaú Unibanco Asset Management",
+    "indice_referencia": "Teva Tesouro Selic"
+  },
+  {
+    "ticker": "B5P211",
+    "nome": "IT NOW IMA-B5 P2 FUNDO DE INDICE RESPONSABILIDADE LIMITADA",
+    "categoria": "etfs",
+    "classe_ativo": "Renda Fixa",
+    "gestor": "Itaú Unibanco Asset Management",
+    "indice_referencia": "IMA-B5 P2"
+  },
+  {
+    "ticker": "LFTB11",
+    "nome": "INVESTO ETF MARKETVECTOR BRAZIL TREASURY 760 DAY TARGET DURATION FUNDO DE ÍNDICE",
+    "categoria": "etfs",
+    "classe_ativo": "Renda Fixa",
+    "gestor": "Investo",
+    "indice_referencia": "MarketVector Brazil Treasury 760 Target Duration Index"
+  },
+  {
+    "ticker": "IMAB11",
+    "nome": "IT NOW ID ETF IMA-B",
+    "categoria": "etfs",
+    "classe_ativo": "Renda Fixa",
+    "gestor": "Itaú Unibanco Asset Management",
+    "indice_referencia": "IMA-B"
+  },
+  {
+    "ticker": "GOLD11",
+    "nome": "TREND ETF LBMA OURO FDO. INV. ÍNDICE - INVEST. EXT",
+    "categoria": "etfs",
+    "classe_ativo": "Commodities",
+    "gestor": "Trend DTVM",
+    "indice_referencia": "LBMA Gold Price"
+  },
+  {
+    "ticker": "BBOV11",
+    "nome": "BB ETF IBOVESPA FUNDO DE ÍNDICE",
+    "categoria": "etfs",
+    "classe_ativo": "Ações",
+    "gestor": "Banco do Brasil DTVM",
+    "indice_referencia": "Ibovespa B3"
+  },
+  {
+    "ticker": "BITH11",
+    "nome": "Hashdex Nasdaq Bitcoin Reference Price Fundo de Índice",
+    "categoria": "etfs",
+    "classe_ativo": "Cripto",
+    "gestor": "Hashdex Asset Management",
+    "indice_referencia": "Nasdaq Bitcoin Reference Price Index"
+  },
+  {
+    "ticker": "LLFT11",
+    "nome": "BTG PACTUAL TEVA TESOURO SELIC FUNDO DE ÍNDICE",
+    "categoria": "etfs",
+    "classe_ativo": "Renda Fixa",
+    "gestor": "BTG Pactual Asset Management",
+    "indice_referencia": "Teva Tesouro Selic"
+  },
+  {
+    "ticker": "SMAL11",
+    "nome": "ISHARES BMFBOVESPA SMALL CAP FUNDO DE ÍNDICE",
+    "categoria": "etfs",
+    "classe_ativo": "Ações",
+    "gestor": "BlackRock",
+    "indice_referencia": "SMLL (Small Cap)"
+  },
+  {
+    "ticker": "BOVB11",
+    "nome": "ETF BRADESCO IBOVESPA FDO DE INDICE",
+    "categoria": "etfs",
+    "classe_ativo": "Ações",
+    "gestor": "Bradesco Asset Management",
+    "indice_referencia": "Ibovespa B3"
+  },
+  {
+    "ticker": "TECK11",
+    "nome": "IT NOW NYSE FANG+TM FUNDO DE ÍNDICE",
+    "categoria": "etfs",
+    "classe_ativo": "Ações",
+    "gestor": "Itaú Unibanco Asset Management",
+    "indice_referencia": "NYSE FANG+"
+  },
+  {
+    "ticker": "LFTS11",
+    "nome": "Investo Teva Tesouro Selic ETF - Fundo de Investimento de Índice",
+    "categoria": "etfs",
+    "classe_ativo": "Renda Fixa",
+    "gestor": "Investo",
+    "indice_referencia": "Teva Tesouro Selic"
+  },
+  {
+    "ticker": "SPXI11",
+    "nome": "IT NOW S&P500 TRN FUNDO DE INDICE",
+    "categoria": "etfs",
+    "classe_ativo": "Ações",
+    "gestor": "Itaú Unibanco Asset Management",
+    "indice_referencia": "S&P 500 TRN"
+  },
+  {
+    "ticker": "DIVO11",
+    "nome": "IT NOW IDIV FUNDO DE ÍNDICE",
+    "categoria": "etfs",
+    "classe_ativo": "Ações",
+    "gestor": "Itaú Unibanco Asset Management",
+    "indice_referencia": "IDIV (Índice de Dividendos B3)"
+  },
+  {
+    "ticker": "SPBZ11",
+    "nome": "BTG PACTUAL S&P 500 FUTURES QUANTO BRL",
+    "categoria": "etfs",
+    "classe_ativo": "Ações",
+    "gestor": "BTG Pactual Asset Management",
+    "indice_referencia": "S&P 500 Futures Quanto USD-BRL Currency Adjusted Index (BRL)"
+  },
+  {
+    "ticker": "PIBB11",
+    "nome": "IT NOW PIBB IBRX-50 - FUNDO DE ÍNDICE",
+    "categoria": "etfs",
+    "classe_ativo": "Ações",
+    "gestor": "Itaú Unibanco Asset Management",
+    "indice_referencia": "IBrX-50"
+  },
+  {
+    "ticker": "IMBB11",
+    "nome": "ETF BRADESCO IMA-B",
+    "categoria": "etfs",
+    "classe_ativo": "Renda Fixa",
+    "gestor": "Bradesco Asset Management",
+    "indice_referencia": "IMA-B"
+  },
+  {
+    "ticker": "BITI11",
+    "nome": "ETF IT NOW Bloomberg Galaxy Bitcoin Fundo de Índice",
+    "categoria": "etfs",
+    "classe_ativo": "Cripto",
+    "gestor": "Itaú Unibanco Asset Management",
+    "indice_referencia": "Bloomberg Galaxy Bitcoin Index"
+  },
+  {
+    "ticker": "B5MB11",
+    "nome": "ETF BRADESCO IMA-B5",
+    "categoria": "etfs",
+    "classe_ativo": "Renda Fixa",
+    "gestor": "Bradesco Asset Management",
+    "indice_referencia": "IMA-B5+"
+  },
+  {
+    "ticker": "NASD11",
+    "nome": "TREND ETF NASDAQ 100 FDO. INV. ÍNDICE. INV. EXT.",
+    "categoria": "etfs",
+    "classe_ativo": "Ações",
+    "gestor": "Trend DTVM",
+    "indice_referencia": "Nasdaq-100"
+  },
+  {
+    "ticker": "QBTC11",
+    "nome": "QR CME CF BITCOIN REFERENCE RATE FUNDO DE ÍNDICE - INVESTIMENTO NO EXTERIOR",
+    "categoria": "etfs",
+    "classe_ativo": "Cripto",
+    "gestor": "QR Asset Management",
+    "indice_referencia": "CME CF Bitcoin Reference Rate"
+  },
+  {
+    "ticker": "BOVX11",
+    "nome": "TREND ETF IBOVESPA FUNDO DE ÍNDICE",
+    "categoria": "etfs",
+    "classe_ativo": "Ações",
+    "gestor": "Trend DTVM",
+    "indice_referencia": "Ibovespa"
+  },
+  {
+    "ticker": "IRFM11",
+    "nome": "IT NOW IRF-M P2",
+    "categoria": "etfs",
+    "classe_ativo": "Renda Fixa",
+    "gestor": "Itaú Unibanco Asset Management",
+    "indice_referencia": "IRF-M P2"
+  },
+  {
+    "ticker": "BMMT11",
+    "nome": "B-Index Morningstar Brasil Momento Fundo de Índice",
+    "categoria": "etfs",
+    "classe_ativo": "Ações",
+    "gestor": "Bradesco Asset Management",
+    "indice_referencia": "Morningstar Brazil Target Momentum Index"
+  },
+  {
+    "ticker": "WRLD11",
+    "nome": "Investo FTSE Global Equities",
+    "categoria": "etfs",
+    "classe_ativo": "Ações",
+    "gestor": "Investo",
+    "indice_referencia": "FTSE Global Equities"
+  },
+  {
+    "ticker": "XINA11",
+    "nome": "TREND ETF MSCI CHINA FDO. INV. ÍNDICE - INV. EXT.",
+    "categoria": "etfs",
+    "classe_ativo": "Ações",
+    "gestor": "Trend DTVM",
+    "indice_referencia": "MSCI China"
+  },
+  {
+    "ticker": "SPYI11",
+    "nome": "Buena Vista US High Income ETF",
+    "categoria": "etfs",
+    "classe_ativo": "Opções",
+    "gestor": "Buena Vista",
+    "indice_referencia": "Índice NEOSSPYI"
+  },
+  {
+    "ticker": "ETHE11",
+    "nome": "HASHDEX NASDAQ ETHEREUM REFERENCE PRICE FUNDO DE ÍNDICE",
+    "categoria": "etfs",
+    "classe_ativo": "Cripto",
+    "gestor": "Hashdex Asset Management",
+    "indice_referencia": "Nasdaq Ethereum Reference Price Index"
+  },
+  {
+    "ticker": "NDIV11",
+    "nome": "Nu Renda Ibov Smart Dividendos Fundo de Índice",
+    "categoria": "etfs",
+    "classe_ativo": "Ações",
+    "gestor": "Nu Asset Management",
+    "indice_referencia": "Ibovespa Smart Dividendos"
+  },
+  {
+    "ticker": "XFIX11",
+    "nome": "TREND ETF IFIX-L FUNDO DE ÍNDICE",
+    "categoria": "etfs",
+    "classe_ativo": "Fundos Imobiliários",
+    "gestor": "Trend DTVM",
+    "indice_referencia": "IFIX-L"
+  },
+  {
+    "ticker": "COIN11",
+    "nome": "BUENA VISTA NEOS BITCOIN HIGH INCOME INDEX FUNDO DE ÍNDICE – RESPONSABILIDADE LIMITADA / BUENA VISTA III FUNDO DE ÍNDICE",
+    "categoria": "etfs",
+    "classe_ativo": "Cripto",
+    "gestor": "Buena Vista",
+    "indice_referencia": "NEOS Bitcoin High Income"
+  },
+  {
+    "ticker": "ALUG11",
+    "nome": "Investo MSCI US Real Estate",
+    "categoria": "etfs",
+    "classe_ativo": "Fundos Imobiliários",
+    "gestor": "Investo",
+    "indice_referencia": "MSCI US Real Estate"
+  },
+  {
+    "ticker": "ACWI11",
+    "nome": "TREND ETF MSCI ACWI FDO. INV. ÍNDICE - INVEST. EXT",
+    "categoria": "etfs",
+    "classe_ativo": "Ações",
+    "gestor": "Trend DTVM",
+    "indice_referencia": "MSCI ACWI"
+  },
+  {
+    "ticker": "QQQI11",
+    "nome": "BUENA VISTA NASDAQ-100® NEOS HIGH INCOME ETF® INDEX (NDXHIEN) FUNDO DE ÍNDICE",
+    "categoria": "etfs",
+    "classe_ativo": "Ações",
+    "gestor": "Buena Vista",
+    "indice_referencia": "Nasdaq-100"
+  },
+  {
+    "ticker": "AUVP11",
+    "nome": "BTG PACTUAL TEVA AUVP AÇÕES FUNDAMENTOS FUNDO DE ÍNDICE",
+    "categoria": "etfs",
+    "classe_ativo": "Ações e Units",
+    "gestor": "BTG Pactual Asset Management",
+    "indice_referencia": "Índice Teva Ações Fundamentos IAFD"
+  },
+  {
+    "ticker": "DEBB11",
+    "nome": "BTG Pactual Teva Debêntures DI Fundo de Índice",
+    "categoria": "etfs",
+    "classe_ativo": "Renda Fixa",
+    "gestor": "BTG Pactual Asset Management",
+    "indice_referencia": "Índice Teva Debentures DI"
+  },
+  {
+    "ticker": "GPUS11",
+    "nome": "INVESTO GP ETF S&P 500 FUNDO DE ÍNDICE",
+    "categoria": "etfs",
+    "classe_ativo": "Ações",
+    "gestor": "Investo",
+    "indice_referencia": "S&P 500"
+  }
+]

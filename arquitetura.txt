@@ -1,0 +1,11 @@
+A ideia do projeto é construir uma plataforma de dados para acompanhar ETFs da B3 diariamente, desde a coleta até um dashboard (web based com html, css e js simples.)
+
+O pipeline vai buscar os dados públicos dos ativos, armazenar os dados brutos em um Data Lake, transformar e organizar essas informações com Python, Parquet e DuckDB, sendo executado automaticamente dia a dia pelo Airflow.
+
+Depois, irá calcular indicadores como ROI, volatidade, drawdown e performance, aplicar validações de qualidade nos dados e disponibilizar tudo em um dashboard interativo com Streamlit.
+
+A arquitetura ficará basicamente assim:
+
+B3 -> Python -> Data Lake -> Parquet/DuckDB -> Airflow -> Data Quality -> Métricas -> Dashboard interativo com html, css e js e Streamlit
+
+A ideia é mostrar um projeto relamente end-to-end, começando nos dados brutos e terminando em uma aplicação visual que pode ser utilizada para explorar o mercado.
