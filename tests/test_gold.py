@@ -201,6 +201,21 @@ def test_transform_gold_sem_nenhum_arquivo_historico(gold_root, historico_root, 
     assert linha == (0, gold.STATUS_HISTORICO_AUSENTE)
 
 
+def test_caminho_gold_mais_recente_nenhum_arquivo(gold_root):
+    assert gold.caminho_gold_mais_recente() is None
+
+
+def test_caminho_gold_mais_recente_escolhe_a_data_mais_recente(gold_root, escrever_silver_historico, ativos_json):
+    arquivo = ativos_json(["BOVA11"])
+    escrever_silver_historico(2026, [{"ticker": "BOVA11", "data_pregao": D0, "preco_fechamento": 10.0}])
+
+    for dia in ("2026-01-01", "2026-01-03", "2026-01-02"):  # ordem embaralhada de propósito
+        gold.transform_silver_to_gold(dia, arquivo=arquivo)
+
+    mais_recente = gold.caminho_gold_mais_recente()
+    assert mais_recente == gold.caminho_particao_gold("2026-01-03")
+
+
 def test_caminho_particao_gold_layout():
     destino = gold.caminho_particao_gold("2026-09-18")
     assert destino.parts[-3:] == ("etfs", "as_of_date=2026-09-18", "gold_etfs_2026-09-18.parquet")

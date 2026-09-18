@@ -5,11 +5,12 @@ import statistics
 import uuid
 from datetime import date
 from pathlib import Path
+from typing import Optional
 
 import duckdb
 
 from get_data import CAMINHO_ATIVOS, carregar_ativos, data_coleta_hoje
-from ingest_cotahist import RAIZ_LAKE_SILVER_HISTORICO
+from ingest_cotahist import glob_silver_historico
 
 RAIZ_LAKE_GOLD = Path(__file__).parent / "datalake" / "gold"
 
@@ -102,6 +103,18 @@ def caminho_particao_gold(as_of_date: str) -> Path:
     return RAIZ_LAKE_GOLD / "etfs" / f"as_of_date={as_of_date}" / f"gold_etfs_{as_of_date}.parquet"
 
 
+def caminho_gold_mais_recente() -> Optional[Path]:
+    """Path do Parquet da gold com o as_of_date mais recente já publicado, ou None se não houver nenhum."""
+    raiz = RAIZ_LAKE_GOLD / "etfs"
+    if not raiz.exists():
+        return None
+    particoes = sorted(raiz.glob("as_of_date=*"))
+    if not particoes:
+        return None
+    arquivos = sorted(particoes[-1].glob("*.parquet"))
+    return arquivos[-1] if arquivos else None
+
+
 def transform_silver_to_gold(data_particao: str, arquivo: Path = CAMINHO_ATIVOS) -> Path:
     """Lê a silver histórica (glob, só datas <= data_particao) e publica as métricas por ticker na gold.
 
@@ -110,7 +123,7 @@ def transform_silver_to_gold(data_particao: str, arquivo: Path = CAMINHO_ATIVOS)
     """
     tickers = sorted({a["ticker"].upper() for a in carregar_ativos(arquivo=arquivo)})
 
-    glob_historico = str(RAIZ_LAKE_SILVER_HISTORICO / "year=*" / "*.parquet")
+    glob_historico = glob_silver_historico()
     con = duckdb.connect()
     try:
         serie_completa = con.sql(

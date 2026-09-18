@@ -116,6 +116,11 @@ def caminho_particao_silver_historico(ano: int) -> Path:
     return RAIZ_LAKE_SILVER_HISTORICO / f"year={ano}" / f"etfs_historico_{ano}.parquet"
 
 
+def glob_silver_historico() -> str:
+    """Padrão de glob pra ler todos os anos da silver histórica de uma vez (DuckDB read_parquet)."""
+    return str(RAIZ_LAKE_SILVER_HISTORICO / "year=*" / "*.parquet")
+
+
 def publicar_silver_historico(ano: int, registros: list[RegistroCotahist]) -> Path:
     destino = caminho_particao_silver_historico(ano)
     destino.parent.mkdir(parents=True, exist_ok=True)

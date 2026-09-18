@@ -97,10 +97,13 @@ def bronze_cotahist_root(tmp_path, monkeypatch):
 
 @pytest.fixture
 def historico_root(tmp_path, monkeypatch):
-    """Isola a silver histórica (COTAHIST) num diretório temporário."""
+    """Isola a silver histórica (COTAHIST) num diretório temporário.
+
+    Só precisa patchar ingest_cotahist: gold.py não guarda mais a própria cópia do path,
+    sempre chama ingest_cotahist.glob_silver_historico() na hora.
+    """
     raiz = tmp_path / "silver_historico"
     monkeypatch.setattr(ingest_cotahist, "RAIZ_LAKE_SILVER_HISTORICO", raiz)
-    monkeypatch.setattr(gold, "RAIZ_LAKE_SILVER_HISTORICO", raiz)
     return raiz
 
 
