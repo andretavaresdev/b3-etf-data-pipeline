@@ -1,10 +1,13 @@
 import json
 
+import duckdb
 import pytest
 
 import get_data
 import validator
 import transform
+import ingest_cotahist
+import gold
 
 
 @pytest.fixture
@@ -81,6 +84,59 @@ def escrever_bronze(bronze_root):
         caminho.write_text(json.dumps(dados, ensure_ascii=False), encoding="utf-8")
         return caminho
 
+    return _escrever
+
+
+@pytest.fixture
+def bronze_cotahist_root(tmp_path, monkeypatch):
+    """Isola a bronze do COTAHIST num diretório temporário."""
+    raiz = tmp_path / "bronze_cotahist"
+    monkeypatch.setattr(ingest_cotahist, "RAIZ_LAKE_BRONZE_COTAHIST", raiz)
+    return raiz
+
+
+@pytest.fixture
+def historico_root(tmp_path, monkeypatch):
+    """Isola a silver histórica (COTAHIST) num diretório temporário."""
+    raiz = tmp_path / "silver_historico"
+    monkeypatch.setattr(ingest_cotahist, "RAIZ_LAKE_SILVER_HISTORICO", raiz)
+    monkeypatch.setattr(gold, "RAIZ_LAKE_SILVER_HISTORICO", raiz)
+    return raiz
+
+
+@pytest.fixture
+def gold_root(tmp_path, monkeypatch):
+    """Isola a gold num diretório temporário."""
+    raiz = tmp_path / "gold"
+    monkeypatch.setattr(gold, "RAIZ_LAKE_GOLD", raiz)
+    return raiz
+
+
+@pytest.fixture
+def escrever_silver_historico(historico_root):
+    """Grava um parquet de silver histórica sintético pra um ano, com as linhas dadas (dicts)."""
+    def _escrever(ano, linhas):
+        con = duckdb.connect()
+        con.execute(ingest_cotahist.DDL_SILVER_HISTORICO)
+        registros = [
+            (
+                l["ticker"], l.get("nome", f"{l['ticker']} TESTE"), l["data_pregao"],
+                l.get("preco_abertura", l["preco_fechamento"]),
+                l.get("preco_maximo", l["preco_fechamento"]),
+                l.get("preco_minimo", l["preco_fechamento"]),
+                l.get("preco_medio", l["preco_fechamento"]),
+                l["preco_fechamento"],
+                l.get("qtd_negocios", 1),
+                l.get("volume_financeiro", 1000.0),
+            )
+            for l in linhas
+        ]
+        placeholders = ",".join(["?"] * len(ingest_cotahist.CAMPOS_SILVER_HISTORICO))
+        con.executemany(f"INSERT INTO silver_historico VALUES ({placeholders})", registros)
+        destino = ingest_cotahist.caminho_particao_silver_historico(ano)
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        con.sql(f"COPY silver_historico TO '{destino.as_posix()}' (FORMAT PARQUET)")
+        return destino
     return _escrever
 
 
