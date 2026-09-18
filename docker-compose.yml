@@ -55,7 +55,8 @@ services:
     <<: *airflow-common
     command: webserver
     ports:
-      - "8080:8080"
+      # Só localhost — nunca expor a UI do Airflow pra rede/internet sem autenticação forte.
+      - "127.0.0.1:8080:8080"
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:
