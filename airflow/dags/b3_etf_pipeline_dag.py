@@ -30,15 +30,15 @@ sys.path.insert(0, "/opt/airflow/project")
 
 
 @dag(
-    dag_id="b3_etf_ingestao_bronze",
-    description="Coleta cotações dos ETFs do top_etf.json, grava na bronze e valida antes de liberar para a silver.",
+    dag_id="b3_etf_pipeline",
+    description="Coleta cotações dos ETFs do top_etf.json, grava na bronze, valida e publica a silver.",
     schedule="30 21 * * 1-5",  # dias úteis, após o fechamento do pregão (horário de Brasília)
     start_date=pendulum.datetime(2026, 9, 1, tz="America/Sao_Paulo"),
     catchup=False,
     max_active_runs=1,
-    tags=["b3", "etf", "bronze", "data-lake"],
+    tags=["b3", "etf", "bronze", "silver", "data-lake"],
 )
-def b3_etf_ingestao_bronze():
+def b3_etf_pipeline():
     @task
     def ingerir_bronze() -> str:
         from get_data import data_coleta_hoje, ingerir_ativos
@@ -105,4 +105,4 @@ def b3_etf_ingestao_bronze():
     transform_silver(validar_bronze(ingerir_bronze()))
 
 
-b3_etf_ingestao_bronze()
+b3_etf_pipeline()
