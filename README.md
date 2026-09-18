@@ -2,7 +2,7 @@
 
 Este projeto coleta diariamente informações de 42 ETFs negociados na B3 e prepara os dados para análises futuras.
 
-O pipeline acessa as páginas públicas do portal Bora Investir, valida a qualidade das informações coletadas e publica os registros aprovados em Parquet. Em produção, todo o processo roda orquestrado pelo Airflow dentro de containers Docker.
+O pipeline acessa as páginas públicas do portal Bora Investir, valida a qualidade das informações coletadas e publica os registros aprovados em Parquet. Na execução orquestrada, todo o processo roda pelo Airflow dentro de containers Docker.
 
 Atualmente, o fluxo está concluído até a camada Silver. A próxima etapa será construir o histórico necessário para calcular indicadores e desenvolver um dashboard.
 
@@ -187,6 +187,7 @@ python transform.py
 * O pipeline ainda não possui uma carga histórica completa.
 * As métricas da camada Gold ainda não foram implementadas.
 * O dashboard ainda não foi desenvolvido.
+* O login admin/admin do Airflow (dev local) ainda está fixo no `docker-compose.yml`; mover para variáveis de ambiente configuráveis é próximo passo de segurança.
 
 ## Próximas etapas
 

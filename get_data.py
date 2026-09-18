@@ -22,7 +22,8 @@ TZ_COLETA = ZoneInfo("America/Sao_Paulo")
 def data_coleta_hoje() -> str:
     return datetime.now(TZ_COLETA).date().isoformat()
 
-# Zona bronze do Data Lake: dados brutos, imutáveis, particionados por categoria/ticker/data.
+# Zona bronze do Data Lake: dados brutos, particionados por categoria/ticker/data. Não é
+# imutável no sentido estrito — reingerir a mesma partição sobrescreve o JSON existente.
 # Só chegam à silver os ativos aprovados pelo validator (ver validator.py).
 RAIZ_LAKE_BRONZE = Path(__file__).parent / "datalake" / "bronze"
 
@@ -35,11 +36,6 @@ FIELD_MAP = {
     "Renta. mês": "rentabilidade_mes",
     "Renta. ano": "rentabilidade_ano",
 }
-
-# Ativos a consultar. "categoria" segue o segmento da URL da B3
-ATIVOS = [
-    {"ticker": "IVVB11", "categoria": "etfs"},
-]
 
 
 @dataclass
@@ -199,12 +195,19 @@ def carregar_ativos(
     categoria: str = "etfs",
     arquivo: Path = CAMINHO_ATIVOS,
 ) -> list:
+    """Carrega o universo de ativos a consultar. Sem fallback silencioso: arquivo ausente ou
+    vazio é erro — processar só o que sobrar (ou um default embutido) mascararia uma falha de
+    configuração como se fosse uma execução normal, com cobertura de 100% sobre um universo errado.
+    """
     if ticker:
         return [{"ticker": ticker, "categoria": categoria}]
-    if arquivo.exists():
-        with open(arquivo, encoding="utf-8") as f:
-            return json.load(f)
-    return ATIVOS
+    if not arquivo.exists():
+        raise FileNotFoundError(f"Arquivo de ativos não encontrado: {arquivo}")
+    with open(arquivo, encoding="utf-8") as f:
+        ativos = json.load(f)
+    if not ativos:
+        raise ValueError(f"Arquivo de ativos está vazio: {arquivo}")
+    return ativos
 
 
 def ingerir_ativos(
@@ -213,13 +216,21 @@ def ingerir_ativos(
     arquivo: Path = CAMINHO_ATIVOS,
     data_execucao: Optional[str] = None,
 ) -> tuple[list[CotacaoAtivo], list[tuple[str, str]]]:
-    """Busca cada ativo e grava o retorno bruto no Data Lake. Usada pela CLI e pela DAG do Airflow.
+    """Busca cada ativo ao vivo e grava o retorno na Bronze. Usada pela CLI e pela DAG do Airflow.
 
-    data_execucao é a data da partição no lake. Por padrão é a data real da coleta em
-    America/Sao_Paulo (ver data_coleta_hoje) — passe explicitamente pra reprocessar uma
-    data específica (rerun/backfill).
+    data_execucao só pode ser a data real da coleta (America/Sao_Paulo) — como a busca é sempre
+    ao vivo, gravar num data_execucao diferente de hoje rotularia o snapshot atual como se fosse
+    de outro dia (backfill falso). Reprocessar uma data passada é responsabilidade de
+    validator/transform, que só leem o que já existe na bronze, sem nova requisição.
     """
-    data_execucao = data_execucao or data_coleta_hoje()
+    hoje = data_coleta_hoje()
+    if data_execucao is not None and data_execucao != hoje:
+        raise ValueError(
+            f"data_execucao={data_execucao!r} diferente da data real da coleta ({hoje!r}). "
+            "A ingestão só grava na partição de hoje — para reprocessar uma data passada, use "
+            "validator.validar_execucao ou transform.transform_bronze_to_silver sobre a bronze já existente."
+        )
+    data_execucao = hoje
 
     resultados = []
     falhas = []

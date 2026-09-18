@@ -2,6 +2,7 @@ import argparse
 import json
 import sys
 from dataclasses import asdict, dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -13,6 +14,8 @@ CAMPOS_CRITICOS = ("valor_atual", "minimo_dia", "maximo_dia", "rentabilidade_dia
 CAMPOS_OPCIONAIS = ("rentabilidade_mes", "rentabilidade_ano")
 # Os 6 itens de ul.asset__info, na ordem em que _fonte.cotacoes_texto os guarda.
 CAMPOS_COTACAO = CAMPOS_CRITICOS + CAMPOS_OPCIONAIS
+# Preços — precisam ser estritamente positivos. Rentabilidade fica de fora: pode ser negativa.
+CAMPOS_PRECO = ("valor_atual", "minimo_dia", "maximo_dia")
 
 # Únicos status que impedem a execução de seguir para a silver.
 STATUS_BLOQUEIAM_DAG = ("falha", "indeterminado")
@@ -46,7 +49,8 @@ def _texto_e_traco(valor) -> bool:
 
 def validar_ativo_bronze(ticker: str, categoria: str, data_execucao: str) -> ResultadoValidacao:
     """Classifica o que a ingestão gravou na bronze pra esse ticker/data, sem bater na rede.
-    Status possíveis: ok, os_parciaisdad, sem_cotacao, indeterminado, falha.
+
+    Status possíveis: ok, dados_parciais, sem_cotacao, indeterminado, falha.
     Só "falha" e "indeterminado" bloqueiam a DAG (ver STATUS_BLOQUEIAM_DAG) — só "ok" e
     "dados_parciais" são publicáveis na silver; "sem_cotacao" passa pela DAG mas fica de fora
     da silver.
@@ -78,6 +82,21 @@ def validar_ativo_bronze(ticker: str, categoria: str, data_execucao: str) -> Res
             f"ticker_pagina ({ticker_pagina!r}) diferente do esperado ({ticker_esperado!r})",
         )
 
+    nome = dados.get("nome")
+    if not isinstance(nome, str) or not nome.strip():
+        return ResultadoValidacao(ticker_esperado, str(caminho), "falha", "Campo 'nome' ausente ou vazio")
+
+    coletado_em = fonte.get("coletado_em")
+    if not isinstance(coletado_em, str) or not coletado_em:
+        return ResultadoValidacao(ticker_esperado, str(caminho), "falha", "Campo '_fonte.coletado_em' ausente")
+    try:
+        datetime.fromisoformat(coletado_em)
+    except ValueError:
+        return ResultadoValidacao(
+            ticker_esperado, str(caminho), "falha",
+            f"'_fonte.coletado_em' não é um timestamp ISO 8601 válido: {coletado_em!r}",
+        )
+
     criticos_none = [c for c in CAMPOS_CRITICOS if dados.get(c) is None]
 
     if len(criticos_none) == len(CAMPOS_CRITICOS):
@@ -104,6 +123,28 @@ def validar_ativo_bronze(ticker: str, categoria: str, data_execucao: str) -> Res
         return ResultadoValidacao(
             ticker_esperado, str(caminho), "falha",
             f"Campos críticos parcialmente ausentes (inconsistente): {', '.join(criticos_none)}",
+        )
+
+    # A partir daqui, todos os críticos estão presentes: valida tipo, sinal e consistência
+    # antes de aprovar. Um float onde devia estar um None (ou vice-versa) indica bronze corrompida.
+    for campo in CAMPOS_COTACAO:
+        valor = dados.get(campo)
+        if valor is not None and not isinstance(valor, (int, float)):
+            return ResultadoValidacao(
+                ticker_esperado, str(caminho), "falha", f"Campo '{campo}' não é numérico: {valor!r}"
+            )
+
+    for campo in CAMPOS_PRECO:
+        valor = dados[campo]
+        if valor <= 0:
+            return ResultadoValidacao(
+                ticker_esperado, str(caminho), "falha", f"Campo '{campo}' não é positivo: {valor}"
+            )
+
+    if dados["minimo_dia"] > dados["maximo_dia"]:
+        return ResultadoValidacao(
+            ticker_esperado, str(caminho), "falha",
+            f"minimo_dia ({dados['minimo_dia']}) maior que maximo_dia ({dados['maximo_dia']})",
         )
 
     faltando_opcionais = [c for c in CAMPOS_OPCIONAIS if dados.get(c) is None]

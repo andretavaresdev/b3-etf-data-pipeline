@@ -9,8 +9,8 @@ from typing import Optional
 
 import duckdb
 
-from get_data import TZ_COLETA, data_coleta_hoje
-from validator import validar_execucao
+from get_data import CAMINHO_ATIVOS, TZ_COLETA, data_coleta_hoje
+from validator import COBERTURA_MINIMA, STATUS_BLOQUEIAM_DAG, calcular_cobertura, validar_execucao
 
 RAIZ_LAKE_SILVER = Path(__file__).parent / "datalake" / "silver"
 
@@ -36,8 +36,8 @@ DDL_SILVER_ETFS = """
         rentabilidade_mes DOUBLE,
         rentabilidade_ano DOUBLE,
         data_coleta DATE NOT NULL,
-        data_referencia TIMESTAMP,
-        coletado_em TIMESTAMP NOT NULL
+        data_referencia TIMESTAMPTZ,
+        coletado_em TIMESTAMPTZ NOT NULL
     )
 """
 
@@ -83,9 +83,14 @@ def _linha_silver(dados: dict, data_particao: str) -> tuple:
     )
 
 
-def transform_bronze_to_silver(data_particao: str) -> Path:
+def transform_bronze_to_silver(data_particao: str, arquivo: Path = CAMINHO_ATIVOS) -> Path:
     """Lê bronze/etfs/ticker=*/date={data_particao}/cotacao.json, aplica o contrato de schema
     e publica um único Parquet diário na silver.
+
+    Repete o gate de qualidade do validator (bloqueios + cobertura mínima) aqui dentro, e não só
+    na task da DAG — quem chamar essa função direto (CLI, notebook, outro script), sem passar
+    pelo Airflow, tem que ficar sujeito à mesma regra. Confiar só no gate externo deixaria a
+    função perigosa fora do fluxo orquestrado.
 
     Só entram linhas "ok" ou "dados_parciais" (ver validator.validar_execucao) — "sem_cotacao",
     "indeterminado" e "falha" ficam de fora. Não faz nenhuma requisição de rede: reclassifica
@@ -96,9 +101,23 @@ def transform_bronze_to_silver(data_particao: str) -> Path:
     sucesso — nunca existe um arquivo final parcial/corrompido. Idempotente: cada chamada pra
     mesma data_particao processa a bronze do zero e substitui o Parquet inteiro, sem acumular.
     """
-    resultados = validar_execucao(data_execucao=data_particao)
-    incluidos = [r for r in resultados if r.status in STATUS_SILVER]
+    resultados = validar_execucao(data_execucao=data_particao, arquivo=arquivo)
 
+    bloqueios = [r for r in resultados if r.status in STATUS_BLOQUEIAM_DAG]
+    if bloqueios:
+        raise RuntimeError(
+            f"Publicação bloqueada para date={data_particao}: {len(bloqueios)} ativo(s) em "
+            f"falha/indeterminado ({', '.join(r.ticker for r in bloqueios)})."
+        )
+
+    cobertura = calcular_cobertura(resultados)
+    if cobertura < COBERTURA_MINIMA:
+        raise RuntimeError(
+            f"Publicação bloqueada para date={data_particao}: cobertura {cobertura:.2%} "
+            f"abaixo do mínimo de {COBERTURA_MINIMA:.0%}."
+        )
+
+    incluidos = [r for r in resultados if r.status in STATUS_SILVER]
     if not incluidos:
         raise RuntimeError(
             f"Nenhum ativo elegível (ok/dados_parciais) para date={data_particao} — nada a publicar na silver."
