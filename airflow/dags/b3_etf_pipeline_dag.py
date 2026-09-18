@@ -1,4 +1,4 @@
-"""DAG do pipeline de ETFs da B3: ingestão -> validação -> silver, com gate de qualidade entre cada etapa."""
+"""DAG do pipeline de ETFs da B3: ingestão -> validação -> silver -> histórico -> gold, com gate de qualidade entre cada etapa."""
 from __future__ import annotations
 
 import sys
@@ -12,12 +12,12 @@ sys.path.insert(0, "/opt/airflow/project")
 
 @dag(
     dag_id="b3_etf_pipeline",
-    description="Coleta cotações dos ETFs do top_etf.json, grava na bronze, valida e publica a silver.",
+    description="Coleta cotações dos ETFs do top_etf.json, grava na bronze, valida e publica silver e gold.",
     schedule="30 21 * * 1-5",  # dias úteis, após o fechamento do pregão (horário de Brasília)
     start_date=pendulum.datetime(2026, 9, 1, tz="America/Sao_Paulo"),
     catchup=False,
     max_active_runs=1,
-    tags=["b3", "etf", "bronze", "silver", "data-lake"],
+    tags=["b3", "etf", "bronze", "silver", "gold", "data-lake"],
 )
 def b3_etf_pipeline():
     @task
@@ -78,9 +78,29 @@ def b3_etf_pipeline():
         # trigger_rule explícito: só roda se validar_bronze terminar com sucesso.
         destino = transform_bronze_to_silver(data_execucao)
         print(f"Silver publicada em: {destino}")
-        return str(destino)
+        return data_execucao
 
-    transform_silver(validar_bronze(ingerir_bronze()))
+    @task(trigger_rule=TriggerRule.ALL_SUCCESS)
+    def atualizar_historico(data_execucao: str) -> str:
+        from ingest_cotahist import ingerir_cotahist
+
+        # trigger_rule explícito: só roda se transform_silver terminar com sucesso. Atualiza só o
+        # ano corrente — a B3 acrescenta o pregão mais recente ao COTAHIST anual todo dia útil.
+        ano_corrente = int(data_execucao[:4])
+        destino = ingerir_cotahist(ano_corrente)
+        print(f"Silver histórica ({ano_corrente}) atualizada em: {destino}")
+        return data_execucao
+
+    @task(trigger_rule=TriggerRule.ALL_SUCCESS)
+    def transform_gold(data_execucao: str) -> str:
+        from gold import transform_silver_to_gold
+
+        # trigger_rule explícito: só roda se atualizar_historico terminar com sucesso.
+        destino = transform_silver_to_gold(data_execucao)
+        print(f"Gold publicada em: {destino}")
+        return data_execucao
+
+    transform_gold(atualizar_historico(transform_silver(validar_bronze(ingerir_bronze()))))
 
 
 b3_etf_pipeline()
