@@ -22,5 +22,4 @@ airflow/logs/
 datalake/
 
 # Artefatos de execução da CLI, regenerados a cada rodada
-cotacoes.csv
 validacao_etfs.json

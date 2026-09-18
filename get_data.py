@@ -1,5 +1,4 @@
 import argparse
-import csv
 import json
 import sys
 from dataclasses import asdict, dataclass, field
@@ -247,15 +246,6 @@ def main():
 
     for cotacao in resultados:
         print(cotacao)
-
-    if resultados:
-        # _fonte fica só na bronze (JSON) — no CSV de conferência rápida interessam os números.
-        campos_csv = [c for c in asdict(resultados[0]).keys() if c != "_fonte"]
-        with open("cotacoes.csv", "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=campos_csv)
-            writer.writeheader()
-            for cotacao in resultados:
-                writer.writerow({k: v for k, v in asdict(cotacao).items() if k != "_fonte"})
 
 
 if __name__ == "__main__":
