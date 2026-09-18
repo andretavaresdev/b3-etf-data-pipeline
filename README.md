@@ -4,7 +4,7 @@ Este projeto coleta diariamente informações de 42 ETFs negociados na B3 e prep
 
 O pipeline acessa as páginas públicas do portal Bora Investir, valida a qualidade das informações coletadas e publica os registros aprovados em Parquet. Na execução orquestrada, todo o processo roda pelo Airflow dentro de containers Docker.
 
-Atualmente, o fluxo está concluído até a camada Gold. A próxima etapa é o dashboard.
+O fluxo completo está implementado: coleta, validação, silver, histórico oficial, gold e um dashboard em Streamlit pra explorar tudo isso.
 
 ## Arquitetura
 
@@ -96,6 +96,16 @@ datalake/gold/etfs/
 
 A leitura da Silver histórica é feita por glob no DuckDB com o filtro `data_pregao <= as_of_date` explícito na query — dados de datas futuras à partição nunca entram no cálculo, o que garante backfills reproduzíveis. Publicação atômica e idempotente, como as demais camadas.
 
+### Dashboard
+
+`dashboard.py` é um app Streamlit que só **lê** os Parquets já publicados — não faz parte da DAG e não escreve em lugar nenhum do Data Lake.
+
+* Cards com data de referência (`as_of_date`) e contagem de ETFs com/sem histórico.
+* Aviso fixo de que os retornos são de preço, sem ajuste por proventos ou eventos corporativos.
+* Seção dedicada listando os ETFs sem histórico no COTAHIST, separada do ranking — não ficam escondidos misturados com os demais.
+* Ranking com todas as métricas da Gold (incluindo `qtd_observacoes` por ticker), comparação de retornos entre tickers selecionados, e gráfico de evolução do preço de fechamento a partir da Silver histórica.
+* Sempre lê o Parquet da Gold com o `as_of_date` mais recente disponível.
+
 ## Tecnologias utilizadas
 
 * Python
@@ -106,6 +116,7 @@ A leitura da Silver histórica é feita por glob no DuckDB com o filtro `data_pr
 * Requests
 * BeautifulSoup
 * PostgreSQL
+* Streamlit
 
 ## Estrutura do projeto
 
@@ -115,11 +126,13 @@ validator.py
 transform.py
 ingest_cotahist.py
 gold.py
+dashboard.py
 inspect_schema.py
 top_etf.json
 docker-compose.yml
 requirements.txt
 requirements-dev.txt
+requirements-dashboard.txt
 pytest.ini
 
 airflow/
@@ -127,6 +140,9 @@ airflow/
 │   └── b3_etf_pipeline_dag.py
 ├── Dockerfile
 └── requirements-project.txt
+
+dashboard/
+└── Dockerfile
 
 tests/
 ├── conftest.py
@@ -159,6 +175,8 @@ A DAG `b3_etf_pipeline` possui cinco tasks executadas em sequência, cada uma s�
 5. `transform_gold`: calcula as métricas por ticker e publica a Gold.
 
 A data da partição representa a data real da coleta no fuso `America/Sao_Paulo`. A logical date do Airflow não é usada como data da cotação.
+
+O dashboard **não** é uma task da DAG — roda como serviço separado, sempre lendo o que já foi publicado.
 
 ## Regras de validação
 
@@ -232,6 +250,12 @@ O Airflow ficará disponível em:
 http://localhost:8080
 ```
 
+E o dashboard em:
+
+```text
+http://localhost:8501
+```
+
 A DAG pode ser executada pela interface do Airflow ou pelo terminal:
 
 ```bash
@@ -253,7 +277,7 @@ python ingest_cotahist.py --ano 2026
 python gold.py
 ```
 
-`ingest_cotahist.py` precisa rodar pelo menos uma vez por ano já concluído (ex.: `--ano 2025`) para ter histórico suficiente pras janelas de 252 pregões — o ano corrente é atualizado automaticamente pela DAG.
+`ingest_cotahist.py` precisa rodar pelo menos uma vez por ano já concluído (ex.: `--ano 2025`) para ter histórico suficiente pras janelas de 252 pregões — o ano corrente é atualizado automaticamente pela DAG. O dashboard só precisa da Gold e da Silver histórica já publicadas; não depende do Airflow pra rodar.
 
 ## Limitações atuais
 
@@ -262,13 +286,12 @@ python gold.py
 * 10 dos 42 ETFs (todos de renda fixa) não têm nenhum registro no COTAHIST — aparecem na Gold com `status_historico = "sem_historico_cotahist"` e métricas nulas, não são omitidos.
 * As métricas da Gold são retorno de preço puro, sem ajuste por dividendos, desdobramentos ou outros eventos corporativos.
 * O backfill do histórico (`ingest_cotahist.py --ano`) precisa ser rodado manualmente para anos já fechados; a DAG só atualiza o ano corrente.
-* O dashboard ainda não foi desenvolvido.
 * O login admin/admin do Airflow (dev local) ainda está fixo no `docker-compose.yml`; mover para variáveis de ambiente configuráveis é próximo passo de segurança.
 
 ## Próximas etapas
 
-* Desenvolver um dashboard em Streamlit, consumindo a Gold para rankings/indicadores e a Silver histórica para gráficos de evolução.
 * Mover as credenciais do Airflow para variáveis de ambiente configuráveis.
+* Descobrir automaticamente novos ETFs listados pela B3, em vez de manter `top_etf.json` manualmente.
 
 ## Aviso
 
