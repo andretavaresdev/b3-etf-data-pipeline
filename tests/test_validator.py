@@ -15,17 +15,8 @@ def test_status_dados_parciais_falta_rentabilidade_ano(escrever_bronze):
     assert r.status == "dados_parciais"
 
 
-def test_status_sem_cotacao_quando_todos_tracos_sao_explicitos(escrever_bronze):
-    escrever_bronze(
-        "SEMC11", DATA,
-        valor_atual=None, minimo_dia=None, maximo_dia=None,
-        rentabilidade_dia=None, rentabilidade_mes=None, rentabilidade_ano=None,
-        fonte_overrides={
-            "cotacoes_texto": {c: "-" for c in validator.CAMPOS_COTACAO},
-            "qtde_negocios_texto": "-",
-            "volume_diario_texto": "-",
-        },
-    )
+def test_status_sem_cotacao_quando_todos_tracos_sao_explicitos(escrever_bronze_sem_cotacao):
+    escrever_bronze_sem_cotacao("SEMC11", DATA)
     r = validator.validar_ativo_bronze("SEMC11", "etfs", DATA)
     assert r.status == "sem_cotacao"
 

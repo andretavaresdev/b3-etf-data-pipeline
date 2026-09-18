@@ -1,8 +1,4 @@
-"""Inspeciona o schema dos dados da bronze do Data Lake com DuckDB, antes da conversão pra Parquet.
-
-Lê direto os JSONs em datalake/bronze/etfs/ (sem tocar nos arquivos), usando o particionamento
-Hive-style (ticker=X/date=Y) já existente nas pastas.
-"""
+"""Inspeciona o schema dos JSONs da bronze com DuckDB, sem tocar nos arquivos."""
 from pathlib import Path
 
 import duckdb

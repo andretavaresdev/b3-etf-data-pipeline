@@ -26,11 +26,7 @@ def silver_root(tmp_path, monkeypatch):
 
 @pytest.fixture
 def ativos_json(tmp_path):
-    """Cria um arquivo de universo de ativos temporário. Retorna o Path — os defaults de
-    `arquivo=` em validar_execucao/transform_bronze_to_silver são resolvidos na definição da
-    função, então precisa ser passado explicitamente em cada chamada, nunca via monkeypatch
-    de CAMINHO_ATIVOS.
-    """
+    """Cria um arquivo de universo de ativos temporário e devolve o Path."""
     def _criar(tickers, categoria="etfs"):
         caminho = tmp_path / "ativos_teste.json"
         caminho.write_text(
@@ -85,4 +81,21 @@ def escrever_bronze(bronze_root):
         caminho.write_text(json.dumps(dados, ensure_ascii=False), encoding="utf-8")
         return caminho
 
+    return _escrever
+
+
+@pytest.fixture
+def escrever_bronze_sem_cotacao(escrever_bronze):
+    """Grava bronze no formato sem_cotacao: campos None, evidenciados por "-"."""
+    def _escrever(ticker, data, categoria="etfs"):
+        return escrever_bronze(
+            ticker, data, categoria=categoria,
+            valor_atual=None, minimo_dia=None, maximo_dia=None,
+            rentabilidade_dia=None, rentabilidade_mes=None, rentabilidade_ano=None,
+            fonte_overrides={
+                "cotacoes_texto": {c: "-" for c in validator.CAMPOS_COTACAO},
+                "qtde_negocios_texto": "-",
+                "volume_diario_texto": "-",
+            },
+        )
     return _escrever

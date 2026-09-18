@@ -8,21 +8,18 @@ from typing import Optional
 
 from get_data import CAMINHO_ATIVOS, RAIZ_LAKE_BRONZE, carregar_ativos, data_coleta_hoje
 
-# Campos default
 CAMPOS_CRITICOS = ("valor_atual", "minimo_dia", "maximo_dia", "rentabilidade_dia")
-# Opcionais, pode incluir recém-listados que ainda não completaram 1 mês/ano de histórico.
+# Pode faltar em ativo recém-listado, sem 1 mês/ano de histórico ainda.
 CAMPOS_OPCIONAIS = ("rentabilidade_mes", "rentabilidade_ano")
 # Os 6 itens de ul.asset__info, na ordem em que _fonte.cotacoes_texto os guarda.
 CAMPOS_COTACAO = CAMPOS_CRITICOS + CAMPOS_OPCIONAIS
-# Preços — precisam ser estritamente positivos. Rentabilidade fica de fora: pode ser negativa.
+# Preços precisam ser positivos; rentabilidade pode ser negativa.
 CAMPOS_PRECO = ("valor_atual", "minimo_dia", "maximo_dia")
 
 # Únicos status que impedem a execução de seguir para a silver.
 STATUS_BLOQUEIAM_DAG = ("falha", "indeterminado")
 
-# Cobertura = (ok + dados_parciais) / quantidade esperada de ativos. Abaixo disso, mesmo sem
-# nenhum "falha"/"indeterminado" individual, a execução não está boa o bastante pra silver
-# (ex.: excesso de "sem_cotacao" indicando problema amplo na fonte, não nos ativos em si).
+# Cobertura mínima pra aprovar a execução, mesmo sem falha/indeterminado individual.
 COBERTURA_MINIMA = 0.95
 STATUS_COBERTURA = ("ok", "dados_parciais")
 
@@ -40,21 +37,12 @@ def caminho_bronze(categoria: str, ticker: str, data_execucao: str) -> Path:
 
 
 def _texto_e_traco(valor) -> bool:
-    """True só quando o valor é a string literal "-" (evidência de "sem cotação" publicada pela B3).
-    None (chave/elemento ausente) NUNCA conta como "-" — são sinais diferentes: um é a B3 dizendo
-    explicitamente que não há cotação, o outro é ausência de evidência (possível parser quebrado).
-    """
+    """True só quando o valor é a string literal "-"; None nunca conta como "-"."""
     return valor == "-"
 
 
 def validar_ativo_bronze(ticker: str, categoria: str, data_execucao: str) -> ResultadoValidacao:
-    """Classifica o que a ingestão gravou na bronze pra esse ticker/data, sem bater na rede.
-
-    Status possíveis: ok, dados_parciais, sem_cotacao, indeterminado, falha.
-    Só "falha" e "indeterminado" bloqueiam a DAG (ver STATUS_BLOQUEIAM_DAG) — só "ok" e
-    "dados_parciais" são publicáveis na silver; "sem_cotacao" passa pela DAG mas fica de fora
-    da silver.
-    """
+    """Classifica o ativo a partir do que já está na bronze, sem bater na rede."""
     caminho = caminho_bronze(categoria, ticker, data_execucao)
     ticker_esperado = ticker.upper()
 
@@ -100,8 +88,7 @@ def validar_ativo_bronze(ticker: str, categoria: str, data_execucao: str) -> Res
     criticos_none = [c for c in CAMPOS_CRITICOS if dados.get(c) is None]
 
     if len(criticos_none) == len(CAMPOS_CRITICOS):
-        # Todos os críticos vieram None: ou é um ativo sem cotação publicada (evidenciado pelos
-        # "-" explícitos), ou o parser não achou os elementos esperados na página (indeterminado).
+        # Todos os críticos None: sem cotação (se vier "-") ou possível quebra do parser.
         cotacoes_texto = fonte.get("cotacoes_texto") or {}
         seis_tracos = all(_texto_e_traco(cotacoes_texto.get(c)) for c in CAMPOS_COTACAO)
         negocios_volume_tracos = (
@@ -119,14 +106,13 @@ def validar_ativo_bronze(ticker: str, categoria: str, data_execucao: str) -> Res
         )
 
     if criticos_none:
-        # Só parte dos críticos ausente: inconsistente, não é o padrão nem de "ok" nem de "sem_cotacao".
+        # Só parte dos críticos ausente — inconsistente, não bate com nenhum status normal.
         return ResultadoValidacao(
             ticker_esperado, str(caminho), "falha",
             f"Campos críticos parcialmente ausentes (inconsistente): {', '.join(criticos_none)}",
         )
 
-    # A partir daqui, todos os críticos estão presentes: valida tipo, sinal e consistência
-    # antes de aprovar. Um float onde devia estar um None (ou vice-versa) indica bronze corrompida.
+    # Críticos presentes: falta validar tipo, sinal e consistência antes de aprovar.
     for campo in CAMPOS_COTACAO:
         valor = dados.get(campo)
         if valor is not None and not isinstance(valor, (int, float)):
@@ -160,11 +146,7 @@ def validar_execucao(
     data_execucao: Optional[str] = None,
     arquivo: Path = CAMINHO_ATIVOS,
 ) -> list[ResultadoValidacao]:
-    """Valida, pra uma data de execução, os dados que a ingestão gravou na bronze.
-
-    Gate entre bronze e silver: usada pela DAG logo após a ingestão — só quando nenhum ativo
-    cai em "falha"/"indeterminado" é que a execução está aprovada a seguir pra silver.
-    """
+    """Valida, pra uma data de execução, os dados que a ingestão gravou na bronze."""
     data_execucao = data_execucao or data_coleta_hoje()
     return [
         validar_ativo_bronze(ativo["ticker"], ativo.get("categoria", "etfs"), data_execucao)

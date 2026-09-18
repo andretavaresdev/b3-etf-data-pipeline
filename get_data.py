@@ -13,18 +13,14 @@ from bs4 import BeautifulSoup, Tag
 BASE_URL = "https://borainvestir.b3.com.br/cotacoes/{categoria}/{ticker}/"
 CAMINHO_ATIVOS = Path(__file__).parent / "top_etf.json"
 
-# Fuso da coleta: a partição date= sempre usa a data real de quando o scraping rodou
-# em America/Sao_Paulo, nunca o logical date do Airflow (que é o início do intervalo
-# agendado, não o instante em que a task de fato executa).
+# Partição date= usa sempre a data real da coleta, não o logical date do Airflow.
 TZ_COLETA = ZoneInfo("America/Sao_Paulo")
 
 
 def data_coleta_hoje() -> str:
     return datetime.now(TZ_COLETA).date().isoformat()
 
-# Zona bronze do Data Lake: dados brutos, particionados por categoria/ticker/data. Não é
-# imutável no sentido estrito — reingerir a mesma partição sobrescreve o JSON existente.
-# Só chegam à silver os ativos aprovados pelo validator (ver validator.py).
+# Dados brutos particionados por categoria/ticker/date; reingerir sobrescreve a partição.
 RAIZ_LAKE_BRONZE = Path(__file__).parent / "datalake" / "bronze"
 
 # Mapeia o rótulo exibido na página para o campo do dataclass.
@@ -40,10 +36,7 @@ FIELD_MAP = {
 
 @dataclass
 class FonteEvidencias:
-    """Evidências textuais da página, capturadas como estão (sem parse), para o validator auditar
-    o comportamento do parser sem precisar refazer a requisição. None = elemento ausente na página;
-    "-" (string) = elemento presente, mas a B3 publicou o traço — são sinais diferentes, não confundir.
-    """
+    """Evidências textuais da página, sem parse, pra o validator auditar sem refazer a requisição."""
     ticker_pagina: Optional[str] = None
     categoria_pagina: Optional[str] = None
     ultima_atualizacao_texto: Optional[str] = None
@@ -77,11 +70,7 @@ def _para_float(texto: str) -> Optional[float]:
 
 
 def _texto_direto(tag: Optional[Tag]) -> Optional[str]:
-    """Texto do nó imediatamente dentro da tag, sem descer em elementos filhos.
-
-    Usado no h1.asset__title, que tem o ticker como texto direto e o nome do ativo
-    num <span> filho — pegar get_text() traria os dois concatenados.
-    """
+    """Texto do nó direto da tag, sem descer nos filhos (evita concatenar o span aninhado)."""
     if tag is None:
         return None
     texto = tag.find(string=True, recursive=False)
@@ -119,7 +108,7 @@ def extrair_cotacao(html: str, ticker: str) -> CotacaoAtivo:
         subtitulo = titulo.select_one(".asset__subtitle")
         cotacao.nome = (subtitulo or titulo).get_text(strip=True)
 
-    # Texto bruto dos 6 itens (pré-parse) junto com o valor numérico, na mesma passagem.
+    # Guarda o texto bruto de cada item junto com o valor numérico, na mesma passagem.
     cotacoes_texto = {campo: None for campo in FIELD_MAP.values()}
     for item in soup.select("ul.asset__info li.asset__info__item"):
         valor_el = item.select_one(".asset__info__value")
@@ -195,10 +184,7 @@ def carregar_ativos(
     categoria: str = "etfs",
     arquivo: Path = CAMINHO_ATIVOS,
 ) -> list:
-    """Carrega o universo de ativos a consultar. Sem fallback silencioso: arquivo ausente ou
-    vazio é erro — processar só o que sobrar (ou um default embutido) mascararia uma falha de
-    configuração como se fosse uma execução normal, com cobertura de 100% sobre um universo errado.
-    """
+    """Carrega o universo de ativos; arquivo ausente ou vazio é erro, sem fallback silencioso."""
     if ticker:
         return [{"ticker": ticker, "categoria": categoria}]
     if not arquivo.exists():
@@ -216,13 +202,7 @@ def ingerir_ativos(
     arquivo: Path = CAMINHO_ATIVOS,
     data_execucao: Optional[str] = None,
 ) -> tuple[list[CotacaoAtivo], list[tuple[str, str]]]:
-    """Busca cada ativo ao vivo e grava o retorno na Bronze. Usada pela CLI e pela DAG do Airflow.
-
-    data_execucao só pode ser a data real da coleta (America/Sao_Paulo) — como a busca é sempre
-    ao vivo, gravar num data_execucao diferente de hoje rotularia o snapshot atual como se fosse
-    de outro dia (backfill falso). Reprocessar uma data passada é responsabilidade de
-    validator/transform, que só leem o que já existe na bronze, sem nova requisição.
-    """
+    """Busca cada ativo ao vivo e grava na bronze; data_execucao só pode ser a data real de hoje."""
     hoje = data_coleta_hoje()
     if data_execucao is not None and data_execucao != hoje:
         raise ValueError(

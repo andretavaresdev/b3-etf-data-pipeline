@@ -1,23 +1,4 @@
-"""
-DAG de ingestão + validação + silver dos ETFs da B3 (arquitetura medalhão).
-
-Fluxo: scraping grava a resposta bruta na bronze -> validator examina os dados
-recém-ingeridos -> transform_bronze_to_silver publica o Parquet diário na silver.
-Se algum ativo cair em "falha" ou "indeterminado" (ver validator.py), a DAG para no
-validar_bronze e a execução inteira não é aprovada para a silver — a transformação
-nunca roda nesse caso. "sem_cotacao" não bloqueia a DAG, mas esse ativo específico
-fica fora da silver (ativo reconhecido pela B3, só sem cotação publicada no dia).
-
-A partição date= usa a data real da coleta em America/Sao_Paulo (get_data.data_coleta_hoje),
-não o logical date do Airflow — o logical date de um schedule cru é o início do intervalo
-agendado, não o instante em que a task roda de fato, e usá-lo gravaria na partição errada.
-
-Além do gate por ativo, há um gate de cobertura: (ok + dados_parciais) / total esperado
-precisa ser >= 95% (validator.COBERTURA_MINIMA). Mesmo sem nenhum "falha"/"indeterminado"
-individual, cobertura baixa (ex.: excesso de "sem_cotacao") também bloqueia a silver.
-
-A gold (próxima etapa, fora deste DAG) será calculada só a partir da silver.
-"""
+"""DAG do pipeline de ETFs da B3: ingestão -> validação -> silver, com gate de qualidade entre cada etapa."""
 from __future__ import annotations
 
 import sys
@@ -94,10 +75,7 @@ def b3_etf_pipeline():
     def transform_silver(data_execucao: str) -> str:
         from transform import transform_bronze_to_silver
 
-        # trigger_rule=ALL_SUCCESS é o default, mas deixei explícito de propósito: essa task
-        # só executa se validar_bronze tiver terminado com sucesso (gate por ativo + cobertura
-        # ok). Se validar_bronze falhar ou for pulada, o Airflow pula transform_silver também
-        # — nunca roda em paralelo nem antes do validator terminar.
+        # trigger_rule explícito: só roda se validar_bronze terminar com sucesso.
         destino = transform_bronze_to_silver(data_execucao)
         print(f"Silver publicada em: {destino}")
         return str(destino)

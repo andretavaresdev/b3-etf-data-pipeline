@@ -14,10 +14,7 @@ from validator import COBERTURA_MINIMA, STATUS_BLOQUEIAM_DAG, calcular_cobertura
 
 RAIZ_LAKE_SILVER = Path(__file__).parent / "datalake" / "silver"
 
-# Únicos status elegíveis pra silver (ver validator.py). Reler aqui, e não importar de
-# validator.STATUS_COBERTURA, porque são conceitos diferentes que hoje coincidem em valor:
-# cobertura é uma métrica agregada, elegibilidade pra silver é uma regra de publicação —
-# podem divergir no futuro.
+# Status elegíveis pra silver — conceito separado de STATUS_COBERTURA, mesmo coincidindo hoje.
 STATUS_SILVER = ("ok", "dados_parciais")
 
 CAMPOS_SILVER = (
@@ -50,10 +47,7 @@ def caminho_particao_silver(data_particao: str) -> Path:
 
 
 def _parse_data_referencia(texto: Optional[str]) -> Optional[datetime]:
-    """Extrai a data/hora que a própria B3 reporta como referência da cotação (ex.: "Atualizado
-    às 17/09/2026 17h16. Delay 15 min."). None se o texto estiver ausente ou não bater o formato —
-    campo nullable na silver, não derruba a linha (o gate de qualidade já rodou no validator).
-    """
+    """Extrai a data/hora que a B3 reporta como referência da cotação; None se não bater o formato."""
     if not texto:
         return None
     m = _RE_ULTIMA_ATUALIZACAO.search(texto)
@@ -84,23 +78,7 @@ def _linha_silver(dados: dict, data_particao: str) -> tuple:
 
 
 def transform_bronze_to_silver(data_particao: str, arquivo: Path = CAMINHO_ATIVOS) -> Path:
-    """Lê bronze/etfs/ticker=*/date={data_particao}/cotacao.json, aplica o contrato de schema
-    e publica um único Parquet diário na silver.
-
-    Repete o gate de qualidade do validator (bloqueios + cobertura mínima) aqui dentro, e não só
-    na task da DAG — quem chamar essa função direto (CLI, notebook, outro script), sem passar
-    pelo Airflow, tem que ficar sujeito à mesma regra. Confiar só no gate externo deixaria a
-    função perigosa fora do fluxo orquestrado.
-
-    Só entram linhas "ok" ou "dados_parciais" (ver validator.validar_execucao) — "sem_cotacao",
-    "indeterminado" e "falha" ficam de fora. Não faz nenhuma requisição de rede: reclassifica
-    a partir do que já está na bronze, igual ao gate da DAG.
-
-    Publicação atômica: escreve num arquivo temporário no mesmo diretório e só troca pelo
-    definitivo com os.replace (rename atômico) depois que o Parquet inteiro foi gravado com
-    sucesso — nunca existe um arquivo final parcial/corrompido. Idempotente: cada chamada pra
-    mesma data_particao processa a bronze do zero e substitui o Parquet inteiro, sem acumular.
-    """
+    """Lê a bronze validada e publica um Parquet diário na silver, com escrita atômica e idempotente."""
     resultados = validar_execucao(data_execucao=data_particao, arquivo=arquivo)
 
     bloqueios = [r for r in resultados if r.status in STATUS_BLOQUEIAM_DAG]

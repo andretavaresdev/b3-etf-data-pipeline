@@ -2,7 +2,6 @@ import duckdb
 import pytest
 
 import transform
-import validator
 
 DATA = "2026-01-01"
 
@@ -19,22 +18,12 @@ def test_transform_publica_parquet_com_ativos_validos(silver_root, ativos_json, 
     assert n == 2
 
 
-def test_transform_exclui_ativos_sem_cotacao(silver_root, ativos_json, escrever_bronze):
-    # Precisa de cobertura >= 95% pra isolar o teste da regra de exclusão do gate de cobertura
-    # (ver test_transform_bloqueia_cobertura_abaixo_do_minimo): 39 ok + 1 sem_cotacao = 97,5%.
+def test_transform_exclui_ativos_sem_cotacao(silver_root, ativos_json, escrever_bronze, escrever_bronze_sem_cotacao):
+    # 39 ok + 1 sem_cotacao = 97,5% de cobertura, isolado do teste de cobertura baixa abaixo.
     tickers_ok = [f"OK{i}" for i in range(39)]
     for t in tickers_ok:
         escrever_bronze(t, DATA)
-    escrever_bronze(
-        "SEMC11", DATA,
-        valor_atual=None, minimo_dia=None, maximo_dia=None,
-        rentabilidade_dia=None, rentabilidade_mes=None, rentabilidade_ano=None,
-        fonte_overrides={
-            "cotacoes_texto": {c: "-" for c in validator.CAMPOS_COTACAO},
-            "qtde_negocios_texto": "-",
-            "volume_diario_texto": "-",
-        },
-    )
+    escrever_bronze_sem_cotacao("SEMC11", DATA)
     arquivo = ativos_json(tickers_ok + ["SEMC11"])
 
     destino = transform.transform_bronze_to_silver(DATA, arquivo=arquivo)
@@ -71,20 +60,11 @@ def test_transform_bloqueia_quando_ha_indeterminado(silver_root, ativos_json, es
         transform.transform_bronze_to_silver(DATA, arquivo=arquivo)
 
 
-def test_transform_bloqueia_cobertura_abaixo_do_minimo(silver_root, ativos_json, escrever_bronze):
-    # 1 ok em 4 esperados = 25%, bem abaixo dos 95% — sem nenhum "falha"/"indeterminado" individual
+def test_transform_bloqueia_cobertura_abaixo_do_minimo(silver_root, ativos_json, escrever_bronze, escrever_bronze_sem_cotacao):
+    # 1 ok em 4 esperados = 25%, bem abaixo dos 95%, sem nenhum "falha"/"indeterminado" individual.
     escrever_bronze("OK11", DATA)
     for i in range(3):
-        escrever_bronze(
-            f"SEMC{i}", DATA,
-            valor_atual=None, minimo_dia=None, maximo_dia=None,
-            rentabilidade_dia=None, rentabilidade_mes=None, rentabilidade_ano=None,
-            fonte_overrides={
-                "cotacoes_texto": {c: "-" for c in validator.CAMPOS_COTACAO},
-                "qtde_negocios_texto": "-",
-                "volume_diario_texto": "-",
-            },
-        )
+        escrever_bronze_sem_cotacao(f"SEMC{i}", DATA)
     arquivo = ativos_json(["OK11", "SEMC0", "SEMC1", "SEMC2"])
 
     with pytest.raises(RuntimeError, match="[Cc]obertura"):
@@ -125,17 +105,8 @@ def test_transform_idempotente(silver_root, ativos_json, escrever_bronze):
     assert conteudo1 == conteudo2
 
 
-def test_transform_sem_ativos_elegiveis_nao_publica(silver_root, ativos_json, escrever_bronze):
-    escrever_bronze(
-        "SEMC11", DATA,
-        valor_atual=None, minimo_dia=None, maximo_dia=None,
-        rentabilidade_dia=None, rentabilidade_mes=None, rentabilidade_ano=None,
-        fonte_overrides={
-            "cotacoes_texto": {c: "-" for c in validator.CAMPOS_COTACAO},
-            "qtde_negocios_texto": "-",
-            "volume_diario_texto": "-",
-        },
-    )
+def test_transform_sem_ativos_elegiveis_nao_publica(silver_root, ativos_json, escrever_bronze_sem_cotacao):
+    escrever_bronze_sem_cotacao("SEMC11", DATA)
     arquivo = ativos_json(["SEMC11"])
 
     with pytest.raises(RuntimeError, match="[Cc]obertura"):
